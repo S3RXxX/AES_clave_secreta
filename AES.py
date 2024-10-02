@@ -1,4 +1,4 @@
-from G_F import *
+import G_F
 
 class AES:
     '''
@@ -20,19 +20,57 @@ class AES:
         InvMixMatrix : equivalente a la matriz usada en 5.3.3, pág. 24
         '''
         self.Polinomio_Irreducible = Polinomio_Irreducible
-        self.GF = GF(self.Polinomio_Irreducible)
+        self.GF = G_F.G_F(self.Polinomio_Irreducible)
         self.SBox, self.InvSBox = self.__Cal_SBox_InvSBox()
-        self.Rcon
+        
+        # TODO
+        self.Rcon = None
+        self.key = key  # nops
+
         self.MixMatrix = [[0x02, 0x03, 0x01, 0x01], [0x01, 0x02, 0x03, 0x01], [0x01, 0x01, 0x02, 0x03], [0x03, 0x01, 0x01, 0x02]]
         self.InvMixMatrix = [[0x0e, 0x0b, 0x0d, 0x09], [0x09, 0x0e, 0x0b, 0x0d], [0x0d, 0x09, 0x0e, 0x0b], [0x0b, 0x0d, 0x09, 0x0e]]
     
     def __Cal_SBox_InvSBox(self):
-        for b in range(256):
-            intermediate_b = 0 if b == 0 else self.GF.inverso(b)
-            
+        """Calcula las tablas SBox y InvSBox de acuerdo con el estándar AES.
+    
+        - SBox se obtiene calculando el inverso multiplicativo de cada byte en GF(2^8),
+        seguido de una transformación afín.
+        - InvSBox es la tabla inversa de SBox.
+        """
 
+        SBox = [0 for _ in range(256)]
+        InvSBox = [0 for _ in range(256)]
+
+        # Constante de la transformación afín
+        c = 0x63
+
+        # Para cada byte b en el rango de 0 a 255
+        for b in range(256):
+            # 1. Calcular el inverso multiplicativo en GF(2^8), excepto cuando b es 0
+            intermediate_b = 0 if b == 0 else self.GF.inverso(b)
+            # 2. Aplicar la transformación afín
+            sb = intermediate_b
+            for i in range(8):
+                sb = (
+                    sb ^ ((intermediate_b >> i) & 1) ^
+                    ((intermediate_b >> ((i + 4) % 8)) & 1) ^
+                    ((intermediate_b >> ((i + 5) % 8)) & 1) ^
+                    ((intermediate_b >> ((i + 6) % 8)) & 1) ^
+                    ((intermediate_b >> ((i + 7) % 8)) & 1)
+                )
+            # Añadir la constante de la transformación afín (0x63)
+            SBox[b] = sb ^ c
+
+            # 3. Calcular InvSBox (la inversa de SBox)
+            InvSBox[SBox[b]] = b
 
         return SBox, InvSBox
+    
+    def __Cal_Rcon(self, key):
+        """
+        
+        """
+        pass
 
     def SubBytes(self, State):
         '''
@@ -86,17 +124,71 @@ class AES:
         5.1.3 MIXCOLUMNS()
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+        # Para cada columna c
+        for c in range(4):
+            # Extraer la columna actual
+            col = [State[r][c] for r in range(4)]
+            
+            # Multiplicar la columna por la MixMatrix
+            new_col = [0, 0, 0, 0]  # Nueva columna después de la transformación
+            for i in range(4):
+                new_col[i] = (
+                    self.GF.producto(self.MixMatrix[i][0], col[0]) ^
+                    self.GF.producto(self.MixMatrix[i][1], col[1]) ^
+                    self.GF.producto(self.MixMatrix[i][2], col[2]) ^
+                    self.GF.producto(self.MixMatrix[i][3], col[3])
+                )
+            
+            # Escribir la nueva columna de vuelta en el estado
+            for r in range(4):
+                State[r][c] = new_col[r]
+
+        return State
+
 
     def InvMixColumns(self, State):
         '''
         5.3.3 INVMIXCOLUMNS()
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+        # Para cada columna c
+        for c in range(4):
+            # Extraer la columna actual
+            col = [State[r][c] for r in range(4)]
+            
+            # Multiplicar la columna por la InvMixMatrix
+            new_col = [0, 0, 0, 0]  # Nueva columna después de la transformación inversa
+            for i in range(4):
+                new_col[i] = (
+                    self.GF.producto(self.InvMixMatrix[i][0], col[0]) ^
+                    self.GF.producto(self.InvMixMatrix[i][1], col[1]) ^
+                    self.GF.producto(self.InvMixMatrix[i][2], col[2]) ^
+                    self.GF.producto(self.InvMixMatrix[i][3], col[3])
+                )
+            
+            # Escribir la nueva columna de vuelta en el estado
+            for r in range(4):
+                State[r][c] = new_col[r]
+        
+        return State
     def AddRoundKey(self, State, roundKey):
         '''
         5.1.4 ADDROUNDKEY()
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+        for r in range(4):  # Recorremos las filas
+            for c in range(4):  # Recorremos las columnas
+                # XOR entre el byte del estado y el byte de la clave de ronda
+                State[r][c] ^= roundKey[r][c] 
+                ############################
+                ############################
+                # cambiar indices roundKey??? 
+                ############################
+                ############################
+        
+        return State
+
+
     def KeyExpansion(self, key):
         '''
         5.2 KEYEXPANSION()
@@ -143,4 +235,15 @@ if __name__ == "__main__":
     lab AES 1: init, SubBytes, MixColumns, ShiftRow 
     i els seus determinats inversos, 
     intentar també AddRoundKey
+    """
+
+    """TODO:
+        -RCON
+        -AddRoundKey
+        -KeyExpansion
+        -Cipher
+        -InvCipher
+        -encrypt_file
+        -decrypt_file
+
     """
