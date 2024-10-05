@@ -1,3 +1,4 @@
+import os
 import G_F
 
 class AES:
@@ -24,8 +25,8 @@ class AES:
         self.SBox, self.InvSBox = self.__Cal_SBox_InvSBox()
         
         # TODO
-        self.Rcon = None
-        self.key = key  # nops
+        self.Rcon = self.__Cal_Rcon()
+        self.__key = key
 
         self.MixMatrix = [[0x02, 0x03, 0x01, 0x01], [0x01, 0x02, 0x03, 0x01], [0x01, 0x01, 0x02, 0x03], [0x03, 0x01, 0x01, 0x02]]
         self.InvMixMatrix = [[0x0e, 0x0b, 0x0d, 0x09], [0x09, 0x0e, 0x0b, 0x0d], [0x0d, 0x09, 0x0e, 0x0b], [0x0b, 0x0d, 0x09, 0x0e]]
@@ -66,11 +67,31 @@ class AES:
 
         return SBox, InvSBox
     
-    def __Cal_Rcon(self, key):
+    def __Cal_Rcon(self):
         """
+        Método auxiliar para calcular las constantes de ronda (Rcon).
+        Genera una lista de 10 valores Rcon, donde cada Rcon es una lista de 4 bytes.
+        Las constantes se utilizan en el proceso de expansión de clave (Key Schedule) del AES.
         
+        Salida:
+        - Rcon: Lista de 10 listas, cada una con 4 bytes.
         """
-        pass
+        Rcon = [[0, 0, 0, 0] for _ in range(10)]
+
+        # El primer valor de Rcon[1] es [0x01, 0x00, 0x00, 0x00]
+        Rcon[0][0] = 0x01
+
+        for i in range(9):
+            j = i+1
+            Rcon[j][0] = self.GF.xTimes(Rcon[i][0])
+        return Rcon
+    
+    def _RotWord(self, word):
+        return [word[1], word[2], word[3], word[0]]
+
+    def _SubWord(self, word):
+        return [self.SBox[word[0]], self.SBox[word[1]],
+                 self.SBox[word[2]], self.SBox[word[3]]]
 
     def SubBytes(self, State):
         '''
@@ -180,11 +201,6 @@ class AES:
             for c in range(4):  # Recorremos las columnas
                 # XOR entre el byte del estado y el byte de la clave de ronda
                 State[r][c] ^= roundKey[r][c] 
-                ############################
-                ############################
-                # cambiar indices roundKey??? 
-                ############################
-                ############################
         
         return State
 
@@ -194,17 +210,78 @@ class AES:
         5.2 KEYEXPANSION()
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+        Nk = None
+        Nr = None
+        key_length = len(key)  # longitud en bytes
+        if key_length == 16:  # 128 bits
+            Nk = 4
+            Nr = 10
+        elif key_length == 24:  # 192 bits
+            Nk = 6
+            Nr = 12
+        elif key_length == 32:  # 256 bits
+            Nk = 8
+            Nr = 14
+        else:
+            raise ValueError(f"""Clave inválida. Debe ser de 128, 192 o 256 bits.
+                             Longitud recibida {key_length}""")
+        
+        # Inicializar las primeras Nk palabras con la clave original
+        w = [None for _ in range(4 * (Nr + 1))] 
+        # (Nr+1) bloques de 4 palabras (de 32 bits cada una)
+
+        for i in range(Nk):
+            w[i] = [key[4*i], key[4*i+1], key[4*i+2], key[4*i+3]] # key[4*i, 4*i+1, 4*i+2, 4*i+3]
+        # Expandir la clave para generar las subclaves
+        for i in range(Nk, 4 * (Nr + 1)):
+            temp = w[i-1]
+            if i % Nk == 0:
+                temp = self._SubWord(self._RotWord(temp))
+                temp = [temp[j] ^ self.Rcon[i//Nk][j] for j in range(4)]
+            elif Nk > 6 and i % Nk == 4:
+                temp = self._SubWord(temp)
+            w[i] = [w[i-Nk][j] ^ temp[j] for j in range(4)]
+        return w
+
+
     def Cipher(self, State, Nr, Expanded_KEY):
         '''
         5.1 Cipher(), Algorithm 1 pág. 12
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+        w = Expanded_KEY
+        State = self.AddRoundKey(State=State, roundKey=w[0:4])
+        for round in range(1, Nr):
+            State = self.SubBytes(State=State)
+            State = self.ShiftRows(State=State)
+            State = self.MixColumns(State=State)
+            State = self.AddRoundKey(State=State, roundKey=w[4*round:4*round+4])
+        State = self.SubBytes(State=State)
+        State = self.ShiftRows(State=State)
+        State = self.AddRoundKey(State=State, roundKey=w[4*Nr:4*Nr+4])
+        return State
+
     def InvCipher(self, State, Nr, Expanded_KEY):
         '''
         5. InvCipher()
         Algorithm 3 pág. 20 o Algorithm 4 pág. 25. Son equivalentes
         FIPS 197: Advanced Encryption Standard (AES)
         '''
+
+        w = Expanded_KEY
+
+        State = State = self.AddRoundKey(State=State, roundKey=w[4*Nr:4*Nr+4])
+        for round in range(Nr-1, 0, -1):
+            State = self.InvShiftRows(State=State)
+            State = self.InvSubBytes(State=State)
+            State = self.AddRoundKey(State=State, roundKey=w[4*round:4*round+4])
+            State = self.InvMixColumns(State=State)
+        State = self.InvShiftRows(State=State)
+        State = self.InvSubBytes(State=State)
+        State = self.AddRoundKey(State=State, roundKey=w[0:4])
+        return State
+
+
     def encrypt_file(self, fichero):
         '''
         Entrada: Nombre del fichero a cifrar
@@ -216,6 +293,50 @@ class AES:
         El nombre de fichero cifrado será el obtenido al a~nadir el sufijo .enc
         al nombre del fichero a cifrar: NombreFichero --> NombreFichero.enc
         '''
+        # Leer el contenido del archivo
+        with open(fichero, 'rb') as f:
+            plaintext = f.read()
+
+        # Generar IV aleatorio de 16 bytes (128 bits) para el modo CBC
+        iv = os.urandom(16)
+
+        # Aplicar padding PKCS7
+        block_size = 16  # Tamaño del bloque en AES (128 bits = 16 bytes)
+        padding_length = block_size - (len(plaintext) % block_size)
+        padding = bytes([padding_length] * padding_length)  # Rellenar con el valor del padding
+        padded_plaintext = plaintext + padding
+
+        # Inicializar el estado para la operación de cifrado (modo CBC)
+        State = [list(padded_plaintext[i:i + 16]) for i in range(0, len(padded_plaintext), 16)]  # Dividir en bloques de 16 bytes
+
+        # Cifrado en modo CBC
+        Nr = 10  # Número de rondas (esto depende de la clave, ajustar si se usa 192 o 256 bits)
+        Expanded_KEY = self.KeyExpansion(self.__key)  # Expansión de la clave
+        previous_block = list(iv)  # El primer bloque a cifrar usa el IV
+
+        ciphertext = iv  # El archivo cifrado empieza con el IV
+
+        for block in State:
+            # XOR del bloque actual con el bloque anterior (o IV en la primera iteración)
+            for i in range(16):
+                block[i] ^= previous_block[i]
+
+            # Cifrar el bloque usando AES
+            encrypted_block = self.Cipher(block, Nr, Expanded_KEY)
+
+            # Guardar el bloque cifrado
+            ciphertext += bytes(encrypted_block)
+
+            # Actualizar el bloque anterior para la siguiente iteración
+            previous_block = encrypted_block
+
+        # Escribir el archivo cifrado
+        encrypted_filename = fichero + '.enc'
+        with open(encrypted_filename, 'wb') as f:
+            f.write(ciphertext)
+
+        print(f"Archivo cifrado guardado como: {encrypted_filename}")
+    
     def decrypt_file(self, fichero):
         '''
         Entrada: Nombre del fichero a descifrar
@@ -227,6 +348,51 @@ class AES:
         El nombre de fichero descifrado será el obtenido al a~nadir el sufijo .dec
         al nombre del fichero a descifrar: NombreFichero --> NombreFichero.dec
         '''
+        # Leer el archivo cifrado
+        with open(fichero, 'rb') as f:
+            ciphertext = f.read()
+
+        # Extraer el IV (primeros 16 bytes)
+        iv = list(ciphertext[:16])  # Lo convertimos a lista para operar en CBC
+        ciphertext = ciphertext[16:]  # El resto es el ciphertext
+
+        # Inicializar el estado para la operación de descifrado (modo CBC)
+        block_size = 16  # Tamaño del bloque en AES (128 bits = 16 bytes)
+        Nr = 10  # Número de rondas de AES (para clave de 128 bits)
+        Expanded_KEY = self.KeyExpansion(self.key)  # Expansión de la clave
+
+        # Dividir ciphertext en bloques de 16 bytes
+        State = [list(ciphertext[i:i + block_size]) for i in range(0, len(ciphertext), block_size)]
+
+        # Descifrado en modo CBC
+        previous_block = iv
+        plaintext = bytearray()
+
+        for block in State:
+            # Descifrar el bloque
+            decrypted_block = self.InvCipher(block, Nr, Expanded_KEY)
+
+            # XOR con el bloque anterior (o el IV en la primera iteración)
+            for i in range(16):
+                decrypted_block[i] ^= previous_block[i]
+
+            # Añadir al texto descifrado
+            plaintext.extend(decrypted_block)
+
+            # Actualizar el bloque anterior para la siguiente iteración
+            previous_block = block
+
+        # Eliminar el padding PKCS7
+        padding_length = plaintext[-1]
+        plaintext = plaintext[:-padding_length]
+
+        # Escribir el archivo descifrado
+        decrypted_filename = fichero + '.dec'
+        with open(decrypted_filename, 'wb') as f:
+            f.write(plaintext)
+
+        print(f"Archivo descifrado guardado como: {decrypted_filename}")
+
 
 if __name__ == "__main__":
     aes = AES()
@@ -238,12 +404,17 @@ if __name__ == "__main__":
     """
 
     """TODO:
-        -RCON
-        -AddRoundKey
-        -KeyExpansion
-        -Cipher
-        -InvCipher
-        -encrypt_file
-        -decrypt_file
+        -encrypt_file (falta revisar)
+        -decrypt_file (falta revisar)
+        -debug all
 
     """
+
+    ### provar cifrar
+    """aes1 = AES(key=, Polinomio_Irreducible = 0x11B)
+    aes1.encrypt_file()
+
+    aes1.decrypt_file()"""
+
+    ### provar descifrar
+    """aes2 = AES(key=, Polinomio_Irreducible = 0x11B)"""
