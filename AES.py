@@ -406,9 +406,13 @@ if __name__ == "__main__":
     """TODO:
         -encrypt_file (falta revisar)
         -decrypt_file (falta revisar)
+        -debug each function
         -debug all
 
+
     """
+    
+
 
     ### provar cifrar
     """aes1 = AES(key=, Polinomio_Irreducible = 0x11B)
