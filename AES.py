@@ -50,20 +50,25 @@ class AES:
             # 1. Calcular el inverso multiplicativo en GF(2^8), excepto cuando b es 0
             intermediate_b = 0 if b == 0 else self.GF.inverso(b)
             # 2. Aplicar la transformación afín
-            sb = intermediate_b
+            sb = 0
             for i in range(8):
-                sb = (
-                    sb ^ ((intermediate_b >> i) & 1) ^
+
+                aux = (
+                    ((intermediate_b >> i) & 1) ^
                     ((intermediate_b >> ((i + 4) % 8)) & 1) ^
                     ((intermediate_b >> ((i + 5) % 8)) & 1) ^
                     ((intermediate_b >> ((i + 6) % 8)) & 1) ^
-                    ((intermediate_b >> ((i + 7) % 8)) & 1)
+                    ((intermediate_b >> ((i + 7) % 8)) & 1) ^
+                    ((c >> i) & 1)
                 )
+                aux = aux << i
+                sb |= aux
+
             # Añadir la constante de la transformación afín (0x63)
-            SBox[b] = sb ^ c
+            SBox[b] = sb
 
             # 3. Calcular InvSBox (la inversa de SBox)
-            InvSBox[SBox[b]] = b
+            InvSBox[sb] = b
 
         return SBox, InvSBox
     
