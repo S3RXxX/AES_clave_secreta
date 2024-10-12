@@ -152,22 +152,19 @@ class AES:
         '''
         # Para cada columna c
         for c in range(4):
+            
             # Extraer la columna actual
             col = [State[r][c] for r in range(4)]
             
             # Multiplicar la columna por la MixMatrix
-            new_col = [0, 0, 0, 0]  # Nueva columna después de la transformación
-            for i in range(4):
-                new_col[i] = (
-                    self.GF.producto(self.MixMatrix[i][0], col[0]) ^
-                    self.GF.producto(self.MixMatrix[i][1], col[1]) ^
-                    self.GF.producto(self.MixMatrix[i][2], col[2]) ^
-                    self.GF.producto(self.MixMatrix[i][3], col[3])
+            for r in range(4):
+                State[r][c] = (
+                    self.GF.producto(self.MixMatrix[r][0], col[0]) ^
+                    self.GF.producto(self.MixMatrix[r][1], col[1]) ^
+                    self.GF.producto(self.MixMatrix[r][2], col[2]) ^
+                    self.GF.producto(self.MixMatrix[r][3], col[3])
                 )
             
-            # Escribir la nueva columna de vuelta en el estado
-            for r in range(4):
-                State[r][c] = new_col[r]
 
         return State
 
@@ -183,18 +180,13 @@ class AES:
             col = [State[r][c] for r in range(4)]
             
             # Multiplicar la columna por la InvMixMatrix
-            new_col = [0, 0, 0, 0]  # Nueva columna después de la transformación inversa
-            for i in range(4):
-                new_col[i] = (
-                    self.GF.producto(self.InvMixMatrix[i][0], col[0]) ^
-                    self.GF.producto(self.InvMixMatrix[i][1], col[1]) ^
-                    self.GF.producto(self.InvMixMatrix[i][2], col[2]) ^
-                    self.GF.producto(self.InvMixMatrix[i][3], col[3])
-                )
-            
-            # Escribir la nueva columna de vuelta en el estado
             for r in range(4):
-                State[r][c] = new_col[r]
+                State[r][c] = (
+                    self.GF.producto(self.InvMixMatrix[r][0], col[0]) ^
+                    self.GF.producto(self.InvMixMatrix[r][1], col[1]) ^
+                    self.GF.producto(self.InvMixMatrix[r][2], col[2]) ^
+                    self.GF.producto(self.InvMixMatrix[r][3], col[3])
+                )
         
         return State
     def AddRoundKey(self, State, roundKey):
@@ -364,7 +356,7 @@ class AES:
         # Inicializar el estado para la operación de descifrado (modo CBC)
         block_size = 16  # Tamaño del bloque en AES (128 bits = 16 bytes)
         Nr = 10  # Número de rondas de AES (para clave de 128 bits)
-        Expanded_KEY = self.KeyExpansion(self.key)  # Expansión de la clave
+        Expanded_KEY = self.KeyExpansion(self.__key)  # Expansión de la clave
 
         # Dividir ciphertext en bloques de 16 bytes
         State = [list(ciphertext[i:i + block_size]) for i in range(0, len(ciphertext), block_size)]
@@ -402,19 +394,11 @@ class AES:
 if __name__ == "__main__":
     aes = AES()
 
-    """
-    lab AES 1: init, SubBytes, MixColumns, ShiftRow 
-    i els seus determinats inversos, 
-    intentar també AddRoundKey
-    """
-
     """TODO:
         -encrypt_file (falta revisar)
         -decrypt_file (falta revisar)
-        -debug each function
+        -debug each function (per KeyExpansion)
         -debug all
-
-
     """
     
 

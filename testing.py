@@ -1,6 +1,9 @@
 from G_F import G_F
 from AES import AES
 
+# Examples brought from 
+# https://formaestudio.com/rijndaelinspector/archivos/Rijndael_Animation_v4_eng-html5.html
+
 def testing_GF():
     e = 0
     values_test = [0x03, 0xff, 0, 47, 254, 33]
@@ -119,79 +122,232 @@ def testing_SBox(verbose=False):
 
         
 
-def testing_SubBytes(verbose=True):
+def testing_SubBytes(verbose=False):
+    e = 0
     aes = AES(key=bytearray(16))  # Usar clave adecuada
-    state = [[0x32, 0x43, 0xf6, 0xa8],
-             [0x88, 0x5a, 0x30, 0x8d],
-             [0x31, 0x31, 0x98, 0xa2],
-             [0xe0, 0x37, 0x07, 0x34]]
+    state = [[0x19, 0xa0, 0x9a, 0xe9],
+             [0x3d, 0xf4, 0xc6, 0xf8],
+             [0xe3, 0xe2, 0x8d, 0x48],
+             [0xbe, 0x2b, 0x2a, 0x08]]
+    new_state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0x27, 0xbf, 0xb4, 0x41],
+                [0x11, 0x98, 0x5d, 0x52],
+                [0xae, 0xf1, 0xe5, 0x30]]
     if verbose:
         print("Estado antes de SubBytes:")
-        print(state)
-        state = aes.SubBytes(state)
+        for row in state:
+            print(list(map(hex,row)))
+    state = aes.SubBytes(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
         print("Estado después de SubBytes:")
-        print(state)
+        for row in state:
+            print(list(map(hex,row)))
+    return e
 
-def testing_InvSubBytes():
+def testing_InvSubBytes(verbose=False):
+    e = 0
     aes = AES(key=bytearray(16))  # Usar clave adecuada
-    state = [[0x63, 0xca, 0xb7, 0x04],
-             [0x09, 0x53, 0xd0, 0x51],
-             [0xcd, 0x60, 0xe0, 0xe7],
-             [0xba, 0x70, 0xe1, 0x8c]]
-    print("Estado antes de InvSubBytes:")
-    print(state)
+    state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0x27, 0xbf, 0xb4, 0x41],
+                [0x11, 0x98, 0x5d, 0x52],
+                [0xae, 0xf1, 0xe5, 0x30]]
+    
+    new_state = [[0x19, 0xa0, 0x9a, 0xe9],
+             [0x3d, 0xf4, 0xc6, 0xf8],
+             [0xe3, 0xe2, 0x8d, 0x48],
+             [0xbe, 0x2b, 0x2a, 0x08]]
+    
+
+    if verbose:
+        print("Estado antes de InvSubBytes:")
+        for row in state:
+            print(list(map(hex,row)))
     state = aes.InvSubBytes(state)
-    print("Estado después de InvSubBytes:")
-    print(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de InvSubBytes:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
 
-def testing_ShiftRows():
+def testing_ShiftRows(verbose=False):
+    e = 0
     aes = AES(key=bytearray(16))
-    state = [[0x87, 0xf2, 0x4d, 0x97],
-             [0x6e, 0x4c, 0x90, 0xec],
-             [0x46, 0xe7, 0x4a, 0xc3],
-             [0xa6, 0x8c, 0xd8, 0x95]]
-    print("Estado antes de ShiftRows:")
-    print(state)
+    state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0x27, 0xbf, 0xb4, 0x41],
+                [0x11, 0x98, 0x5d, 0x52],
+                [0xae, 0xf1, 0xe5, 0x30]]
+    new_state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0xbf, 0xb4, 0x41, 0x27],
+                [0x5d, 0x52, 0x11, 0x98],
+                [0x30, 0xae, 0xf1, 0xe5]]
+    if verbose:
+        print("Estado antes de ShiftRows:")
+        for row in state:
+            print(list(map(hex,row)))
     state = aes.ShiftRows(state)
-    print("Estado después de ShiftRows:")
-    print(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de ShiftRows:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
 
-def testing_InvShiftRows():
+def testing_InvShiftRows(verbose=False):
+    e = 0
     aes = AES(key=bytearray(16))
-    state = [[0x87, 0xf2, 0x4d, 0x97],
-             [0x6e, 0x4c, 0x90, 0xec],
-             [0x46, 0xe7, 0x4a, 0xc3],
-             [0xa6, 0x8c, 0xd8, 0x95]]
-    print("Estado antes de InvShiftRows:")
-    print(state)
+    new_state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0x27, 0xbf, 0xb4, 0x41],
+                [0x11, 0x98, 0x5d, 0x52],
+                [0xae, 0xf1, 0xe5, 0x30]]
+    state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0xbf, 0xb4, 0x41, 0x27],
+                [0x5d, 0x52, 0x11, 0x98],
+                [0x30, 0xae, 0xf1, 0xe5]]
+    if verbose:
+        print("Estado antes de InvShiftRows:")
+        for row in state:
+            print(list(map(hex,row)))
     state = aes.InvShiftRows(state)
-    print("Estado después de InvShiftRows:")
-    print(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de InvShiftRows:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
 
-def testing_MixColumns():
-    pass
-
-def testing_InvMixColumns():
-    pass
-
-def testing_AddRoundKey():
+def testing_MixColumns(verbose=False):
+    e = 0
     aes = AES(key=bytearray(16))
-    state = [[0x32, 0x88, 0x31, 0xe0],
-             [0x43, 0x5a, 0x31, 0x37],
-             [0xf6, 0x30, 0x98, 0x07],
-             [0xa8, 0x8d, 0xa2, 0x34]]
-    round_key = [[0x2b, 0x28, 0xab, 0x09],
-                 [0x7e, 0xae, 0xf7, 0xcf],
-                 [0x15, 0xd2, 0x15, 0x4f],
-                 [0x16, 0xa6, 0x88, 0x3c]]
-    print("Estado antes de AddRoundKey:")
-    print(state)
-    state = aes.AddRoundKey(state, round_key)
-    print("Estado después de AddRoundKey:")
-    print(state)
+    state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0xbf, 0xb4, 0x41, 0x27],
+                [0x5d, 0x52, 0x11, 0x98],
+                [0x30, 0xae, 0xf1, 0xe5]]
+    
+    new_state = [[0x04, 0xe0, 0x48, 0x28],
+                 [0x66, 0xcb, 0xf8, 0x06],
+                 [0x81, 0x19, 0xd3, 0x26],
+                 [0xe5, 0x9a, 0x7a, 0x4c]]
 
-def testing_KeyExpansion():
-    pass
+    if verbose:
+        print("Estado antes de MixColumns:")
+        for row in state:
+            print(list(map(hex,row)))
+    state = aes.MixColumns(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de MixColumns:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
+
+def testing_InvMixColumns(verbose=False):
+    e = 0
+    aes = AES(key=bytearray(16))
+    state = [[0x04, 0xe0, 0x48, 0x28],
+                 [0x66, 0xcb, 0xf8, 0x06],
+                 [0x81, 0x19, 0xd3, 0x26],
+                 [0xe5, 0x9a, 0x7a, 0x4c]]
+    new_state = [[0xd4, 0xe0, 0xb8, 0x1e],
+                [0xbf, 0xb4, 0x41, 0x27],
+                [0x5d, 0x52, 0x11, 0x98],
+                [0x30, 0xae, 0xf1, 0xe5]]
+    if verbose:
+        print("Estado antes de InvMixColumns:")
+        for row in state:
+            print(list(map(hex,row)))
+    state = aes.InvMixColumns(state)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de InvMixColumns:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
+
+def testing_AddRoundKey(verbose=False):
+    e = 0
+    state = [[0x04, 0xe0, 0x48, 0x28],
+                 [0x66, 0xcb, 0xf8, 0x06],
+                 [0x81, 0x19, 0xd3, 0x26],
+                 [0xe5, 0x9a, 0x7a, 0x4c]]
+    
+    round_key = [[0xa0, 0x88, 0x23, 0x2a],
+                 [0xfa, 0x54, 0xa3, 0x6c],
+                 [0xfe, 0x2c, 0x39, 0x76],
+                 [0x17, 0xb1, 0x39, 0x05]]
+    
+    new_state = [[0xa4, 0x68, 0x6b, 0x02],
+                 [0x9c, 0x9f, 0x5b, 0x6a],
+                 [0x7f, 0x35, 0xea, 0x50],
+                 [0xf2, 0x2b, 0x43, 0x49]]
+    aes = AES(key=bytearray(16))
+    if verbose:
+        print("Estado antes de AddRoundKey:")
+        for row in state:
+            print(list(map(hex,row)))
+    state = aes.AddRoundKey(state, roundKey=round_key)
+    for i in range(len(new_state)):
+        for j in range(len(new_state[i])):
+            if new_state[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print("Estado después de AddRoundKey:")
+        for row in state:
+            print(list(map(hex,row)))
+    return e
+
+def testing_RotWord(verbose=False):
+    word = [0x09, 0xcf, 0x4f, 0x3c]
+    gt = [0xcf, 0x4f, 0x3c, 0x09]
+    e = 0
+    aes = AES(key=bytearray(16))
+    new_word = aes._RotWord(word=word)
+    if verbose:
+        print(f"Word: {list(map(hex,word))}")
+        print(f"RotWord: {list(map(hex,new_word))}")
+    for i in range(len(word)):
+        if gt[i] != new_word[i]:
+            e += 1
+
+    return e
+
+
+def testing_SubWord(verbose=False):
+    gt = [0x8a, 0x84, 0xeb, 0x01]
+    word = [0xcf, 0x4f, 0x3c, 0x09]
+    e = 0
+    aes = AES(key=bytearray(16))
+    new_word = aes._SubWord(word=word)
+    if verbose:
+        print(f"Word: {list(map(hex,word))}")
+        print(f"SubWord: {list(map(hex,new_word))}")
+    for i in range(len(word)):
+        if gt[i] != new_word[i]:
+            e += 1
+
+    return e
+
+def testing_KeyExpansion(verbose=True):
+    key = bytearray()
 
 def testing_Cipher():
     pass
@@ -213,5 +369,29 @@ if __name__ == "__main__":
     es += testing_Rcon()
 
     es += testing_SBox()
+
+    es += testing_SubBytes()
+
+    es += testing_InvSubBytes()
+
+    es += testing_ShiftRows()
+
+    es += testing_InvShiftRows()
+
+    es += testing_MixColumns()
+
+    es += testing_InvMixColumns()
+
+    es += testing_AddRoundKey()
+
+    es += testing_RotWord()
+
+    es += testing_SubWord()
+
+    # es += testing_KeyExpansion() 
+
+    # es += testing_Cipher()
+
+    # es += testing_InvCipher()
 
     print(f"All tested performed with {es} errors")
