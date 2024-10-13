@@ -234,7 +234,7 @@ class AES:
             temp = w[i-1]
             if i % Nk == 0:
                 temp = self._SubWord(self._RotWord(temp))
-                temp = [temp[j] ^ self.Rcon[i//Nk][j] for j in range(4)]
+                temp = [temp[j] ^ self.Rcon[(i//Nk)-1][j] for j in range(4)]
             elif Nk > 6 and i % Nk == 4:
                 temp = self._SubWord(temp)
             w[i] = [w[i-Nk][j] ^ temp[j] for j in range(4)]
@@ -398,7 +398,10 @@ if __name__ == "__main__":
         -encrypt_file (falta revisar)
         -decrypt_file (falta revisar)
         -debug each function (per KeyExpansion)
-        -debug all
+        -debug tot des de Python
+        - fer anar amb openssl:
+                descifrar: openssl aes-128-cbc -d -K key -iv IV -in infile -out outfile
+                cifrar   : openssl aes-128-cbc -e -K key -iv IV -in infile -out outfile 
     """
     
 

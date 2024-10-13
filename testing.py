@@ -3,6 +3,7 @@ from AES import AES
 
 # Examples brought from 
 # https://formaestudio.com/rijndaelinspector/archivos/Rijndael_Animation_v4_eng-html5.html
+# KeyExpansion, Cipher, InvCipher,... tested w/ aes-Valores test
 
 def testing_GF():
     e = 0
@@ -346,8 +347,14 @@ def testing_SubWord(verbose=False):
 
     return e
 
-def testing_KeyExpansion(verbose=True):
-    key = bytearray()
+def testing_KeyExpansion(key, pi=0x11B, verbose=False):
+    key = bytearray.fromhex(key)
+    aes = AES(key=key, Polinomio_Irreducible=pi)
+    expanded_key = aes.KeyExpansion(key)
+
+    print("Expanded Key Schedule:")
+    for i, word in enumerate(expanded_key):
+        print(f"w[{i}]: {list(map(hex, word))}")
 
 def testing_Cipher():
     pass
@@ -388,9 +395,16 @@ if __name__ == "__main__":
 
     es += testing_SubWord()
 
-    # es += testing_KeyExpansion() 
+    # Polinomio Irreducible = 0x11B
+    # testing_KeyExpansion(key="2b7e151628aed2a6abf7158809cf4f3c", verbose=False) 
+    # testing_KeyExpansion(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b", verbose=True)
+    # testing_KeyExpansion(key=" 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", verbose=True)
 
-    # es += testing_Cipher()
+    # Polinomio Irreducible = 0x11
+
+    # Polinomio Irreducible = 0x11B
+
+    testing_Cipher()
 
     # es += testing_InvCipher()
 
