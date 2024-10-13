@@ -291,10 +291,15 @@ def testing_AddRoundKey(verbose=False):
                  [0x81, 0x19, 0xd3, 0x26],
                  [0xe5, 0x9a, 0x7a, 0x4c]]
     
-    round_key = [[0xa0, 0x88, 0x23, 0x2a],
-                 [0xfa, 0x54, 0xa3, 0x6c],
-                 [0xfe, 0x2c, 0x39, 0x76],
-                 [0x17, 0xb1, 0x39, 0x05]]
+    # round_key = [[0xa0, 0x88, 0x23, 0x2a],
+    #              [0xfa, 0x54, 0xa3, 0x6c],
+    #              [0xfe, 0x2c, 0x39, 0x76],
+    #              [0x17, 0xb1, 0x39, 0x05]]
+
+    round_key = [[0xa0, 0xfa, 0xfe,0x17],
+                 [0x88, 0x54, 0x2c, 0xb1],
+                 [0x23, 0xa3, 0x39, 0x39],
+                 [0x2a, 0x6c, 0x76, 0x05]]
     
     new_state = [[0xa4, 0x68, 0x6b, 0x02],
                  [0x9c, 0x9f, 0x5b, 0x6a],
@@ -356,7 +361,7 @@ def testing_KeyExpansion(key, pi=0x11B, verbose=True):
     for i, word in enumerate(expanded_key):
         print(f"w[{i}]: {list(map(hex, word))}")
 
-def testing_Cipher(key, gt, pi=0x11B, verbose=True):
+def testing_Cipher(key, gt, pi=0x11B, verbose=False):
     e = 0
     key = bytearray.fromhex(key)
     aes = AES(key=key, Polinomio_Irreducible=pi)
@@ -365,23 +370,48 @@ def testing_Cipher(key, gt, pi=0x11B, verbose=True):
              [0xf6, 0x30, 0x98, 0x07],
              [0xa8, 0x8d, 0xa2, 0x34]]
     exp_key = aes.KeyExpansion(key)
-    print("Initial state:")
-    for row in state:
-            print(list(map(hex,row)))
+    if verbose:
+        print("Initial state:")
+        for row in state:
+                print(list(map(hex,row)))
 
     state = aes.Cipher(State=state, Expanded_KEY=exp_key, Nr=10)
     for i in range(len(gt)):
         for j in range(len(gt[i])):
             if gt[i][j] != state[i][j]:
                 e+=1
+    if verbose:
+        print(f"Cipher result w/ {e} errors:")
+        for row in state:
+                print(list(map(hex,row)))
+    return e
 
-    print(f"Cipher result w/ {e} errors:")
-    for row in state:
-            print(list(map(hex,row)))
 
+def testing_InvCipher(key, state, pi=0x11b, verbose=False):    
+    e = 0
+    key = bytearray.fromhex(key)
+    aes = AES(key=key, Polinomio_Irreducible=pi)
+    gt = [[0x32, 0x88, 0x31, 0xe0],
+             [0x43, 0x5a, 0x31, 0x37],
+             [0xf6, 0x30, 0x98, 0x07],
+             [0xa8, 0x8d, 0xa2, 0x34]]
+    exp_key = aes.KeyExpansion(key)
+    if verbose:
+        print("Initial state:")
+        for row in state:
+                print(list(map(hex,row)))
 
-def testing_InvCipher():
-    pass
+    state = aes.InvCipher(State=state, Expanded_KEY=exp_key, Nr=10)
+    for i in range(len(gt)):
+        for j in range(len(gt[i])):
+            if gt[i][j] != state[i][j]:
+                e+=1
+    if verbose:
+        print(f"InvCipher result w/ {e} errors:")
+        for row in state:
+                print(list(map(hex,row)))
+    return e
+    
 
 def testing_encrypt_file():
     pass
@@ -416,7 +446,6 @@ if __name__ == "__main__":
 
     es += testing_SubWord()
 
-    print(f"All previous tests performed with {es} errors")
 
     # Polinomio Irreducible = 0x11B
     # testing_KeyExpansion(key="2b7e151628aed2a6abf7158809cf4f3c", verbose=True) 
@@ -426,9 +455,9 @@ if __name__ == "__main__":
            [0x25, 0xdc, 0x11, 0x6a],
            [0x84, 0x09, 0x85, 0x0b],
            [0x1d, 0xfb, 0x97, 0x32]]
-    testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c",gt=gt1, verbose=True)
+    es += testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c",gt=gt1)
 
-    # testing_InvCipher()
+    es += testing_InvCipher(key="2b7e151628aed2a6abf7158809cf4f3c",state=gt1)
     
     
     
@@ -436,10 +465,13 @@ if __name__ == "__main__":
     # testing_KeyExpansion(key="2b7e151628aed2a6abf7158809cf4f3c", pi=0x11d, verbose=True)
     # testing_KeyExpansion(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b", pi=0x11d, verbose=True)
     # testing_KeyExpansion(key=" 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", pi=0x11d, verbose=True)
-    
-    # testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", pi=0x11d, verbose=True)
+    gt2 = [[0xcb, 0xe, 0x5b, 0xbb],
+            [0x7f, 0xde, 0xdb, 0x9b],
+            [0xa3, 0x74, 0xcc, 0xca],
+            [0x4d, 0xbc, 0x9c, 0xbb]]
+    es += testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", gt=gt2, pi=0x11d)
 
-    # testing_InvCipher()
+    es += testing_InvCipher(key="2b7e151628aed2a6abf7158809cf4f3c", state=gt2, pi=0x11d)
     
     
     
@@ -447,7 +479,14 @@ if __name__ == "__main__":
     # testing_KeyExpansion(key="2b7e151628aed2a6abf7158809cf4f3c", pi=0x177,verbose=True)
     # testing_KeyExpansion(key="8e73b0f7da0e6452c810f32b809079e562f8ead2522c6b7b", pi=0x177, verbose=True)
     # testing_KeyExpansion(key=" 603deb1015ca71be2b73aef0857d77811f352c073b6108d72d9810a30914dff4", pi=0x177, verbose=True)
+    gt3 = [[0xb6, 0x16, 0x8f, 0x15],
+           [0xa9, 0x8f, 0x8b, 0xfa],
+           [0xd6, 0xb4, 0x11, 0xcb],
+           [0x60, 0xef, 0x5, 0xe7]]
     
-    # testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", pi=0x177, verbose=True)
+    testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", gt=gt3, pi=0x177, verbose=True)
 
-    # testing_InvCipher()
+    testing_InvCipher(key="2b7e151628aed2a6abf7158809cf4f3c", state=gt3, pi=0x177, verbose=True)
+
+
+    print(f"All previous tests performed with {es} errors")

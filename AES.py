@@ -197,7 +197,7 @@ class AES:
         for r in range(4):  # Recorremos las filas
             for c in range(4):  # Recorremos las columnas
                 # XOR entre el byte del estado y el byte de la clave de ronda
-                State[r][c] ^= roundKey[r][c] 
+                State[r][c] ^= roundKey[c][r] 
         
         return State
 
@@ -247,39 +247,39 @@ class AES:
         FIPS 197: Advanced Encryption Standard (AES)
         '''
         w = Expanded_KEY
-        print("Input")
-        self.__print_state(State)
+        # print("Input")
+        # self.__print_state(State)
         State = self.AddRoundKey(State=State, roundKey=w[0:4])
-        print("AddRoundKey")
-        self.__print_state(State)
+        # print("AddRoundKey")
+        # self.__print_state(State)
         for round in range(1, Nr):
             State = self.SubBytes(State=State)
-            print("SubBytes")
-            self.__print_state(State)
+            # print("SubBytes")
+            # self.__print_state(State)
             
             State = self.ShiftRows(State=State)
-            print("ShiftRows")
-            self.__print_state(State)
+            # print("ShiftRows")
+            # self.__print_state(State)
             
             State = self.MixColumns(State=State)
-            print("MixColumns")
-            self.__print_state(State)
+            # print("MixColumns")
+            # self.__print_state(State)
             
             State = self.AddRoundKey(State=State, roundKey=w[4*round:4*round+4])
-            print("AddRoundKey")
-            self.__print_state(State)
+            # print("AddRoundKey")
+            # self.__print_state(State)
 
         State = self.SubBytes(State=State)
-        print("SubBytes")
-        self.__print_state(State)
+        # print("SubBytes")
+        # self.__print_state(State)
 
         State = self.ShiftRows(State=State)
-        print("ShiftRows")
-        self.__print_state(State)
+        # print("ShiftRows")
+        # self.__print_state(State)
 
         State = self.AddRoundKey(State=State, roundKey=w[4*Nr:4*Nr+4])
-        print("AddRoundKey")
-        self.__print_state(State)
+        # print("AddRoundKey")
+        # self.__print_state(State)
 
         return State
 
