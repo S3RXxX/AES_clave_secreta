@@ -247,15 +247,40 @@ class AES:
         FIPS 197: Advanced Encryption Standard (AES)
         '''
         w = Expanded_KEY
+        print("Input")
+        self.__print_state(State)
         State = self.AddRoundKey(State=State, roundKey=w[0:4])
+        print("AddRoundKey")
+        self.__print_state(State)
         for round in range(1, Nr):
             State = self.SubBytes(State=State)
+            print("SubBytes")
+            self.__print_state(State)
+            
             State = self.ShiftRows(State=State)
+            print("ShiftRows")
+            self.__print_state(State)
+            
             State = self.MixColumns(State=State)
+            print("MixColumns")
+            self.__print_state(State)
+            
             State = self.AddRoundKey(State=State, roundKey=w[4*round:4*round+4])
+            print("AddRoundKey")
+            self.__print_state(State)
+
         State = self.SubBytes(State=State)
+        print("SubBytes")
+        self.__print_state(State)
+
         State = self.ShiftRows(State=State)
+        print("ShiftRows")
+        self.__print_state(State)
+
         State = self.AddRoundKey(State=State, roundKey=w[4*Nr:4*Nr+4])
+        print("AddRoundKey")
+        self.__print_state(State)
+
         return State
 
     def InvCipher(self, State, Nr, Expanded_KEY):
@@ -390,6 +415,10 @@ class AES:
 
         print(f"Archivo descifrado guardado como: {decrypted_filename}")
 
+    def __print_state(self, state):
+        for row in state:
+            print(list(map(hex,row)))
+
 
 if __name__ == "__main__":
     aes = AES()
@@ -397,7 +426,7 @@ if __name__ == "__main__":
     """TODO:
         -encrypt_file (falta revisar)
         -decrypt_file (falta revisar)
-        -debug each function (per KeyExpansion)
+        -debug each function (per Cipher --> arreglar AddRoundKey)
         -debug tot des de Python
         - fer anar amb openssl:
                 descifrar: openssl aes-128-cbc -d -K key -iv IV -in infile -out outfile
