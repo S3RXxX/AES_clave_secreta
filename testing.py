@@ -411,7 +411,35 @@ def testing_InvCipher(key, state, pi=0x11b, verbose=False):
         for row in state:
                 print(list(map(hex,row)))
     return e
-    
+def testing_Create_State():
+    lst = list(range(1, 17))
+    e = 0
+    gt = [[1,5,9,13],[2,6,10,14],[3,7,11,15],[4,8,12, 16]]
+    key = bytearray(16)
+    aes = AES(key=key, Polinomio_Irreducible=0x11B)
+    State = aes._Create_State(lst=lst)
+    for i in range(4):
+        for j in range(4):
+            if State[i][j] != gt[i][j]:
+                e += 1
+                print(State[i][j], gt[i][j])
+    return e
+
+def testing_Extract_State(verbose=False):
+    lst = list(range(1, 17))
+    e = 0
+    gt = [[1,5,9,13],[2,6,10,14],[3,7,11,15],[4,8,12, 16]]
+    key = bytearray(16)
+    aes = AES(key=key, Polinomio_Irreducible=0x11B)
+    new_lst = aes._Extract_State(State=gt)
+    if verbose:
+        print(lst)
+        print(new_lst)
+    for i in range(16):
+            if lst[i] != new_lst[i]:
+                e += 1
+                print(lst[i], new_lst[i])
+    return e
 
 def testing_encrypt_file():
     pass
@@ -484,9 +512,14 @@ if __name__ == "__main__":
            [0xd6, 0xb4, 0x11, 0xcb],
            [0x60, 0xef, 0x5, 0xe7]]
     
-    testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", gt=gt3, pi=0x177, verbose=True)
+    es += testing_Cipher(key="2b7e151628aed2a6abf7158809cf4f3c", gt=gt3, pi=0x177)
 
-    testing_InvCipher(key="2b7e151628aed2a6abf7158809cf4f3c", state=gt3, pi=0x177, verbose=True)
+    es += testing_InvCipher(key="2b7e151628aed2a6abf7158809cf4f3c", state=gt3, pi=0x177)
 
+    es += testing_Create_State()
+
+    es += testing_Extract_State()
 
     print(f"All previous tests performed with {es} errors")
+
+    

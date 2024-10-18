@@ -91,6 +91,20 @@ class AES:
             Rcon[j][0] = self.GF.xTimes(Rcon[i][0])
         return Rcon
     
+    def _Create_State(self, lst):
+        r1, r2, r3, r4 = [], [], [], []
+        State = [r1, r2, r3, r4]
+        for i in range(16):  # el estado siempre es 4x4
+            State[i%4].append(lst[i])
+        return State
+    
+    def _Extract_State(self, State):
+        lst = [None for _ in range(16)]
+        for i in range(4):
+            for j in range(4):
+                lst[i + 4*j] = (State[i][j])
+        return lst
+    
     def _RotWord(self, word):
         return [word[1], word[2], word[3], word[0]]
 
@@ -247,40 +261,16 @@ class AES:
         FIPS 197: Advanced Encryption Standard (AES)
         '''
         w = Expanded_KEY
-        # print("Input")
-        # self.__print_state(State)
         State = self.AddRoundKey(State=State, roundKey=w[0:4])
-        # print("AddRoundKey")
-        # self.__print_state(State)
         for round in range(1, Nr):
             State = self.SubBytes(State=State)
-            # print("SubBytes")
-            # self.__print_state(State)
-            
             State = self.ShiftRows(State=State)
-            # print("ShiftRows")
-            # self.__print_state(State)
-            
-            State = self.MixColumns(State=State)
-            # print("MixColumns")
-            # self.__print_state(State)
-            
+            State = self.MixColumns(State=State)   
             State = self.AddRoundKey(State=State, roundKey=w[4*round:4*round+4])
-            # print("AddRoundKey")
-            # self.__print_state(State)
 
         State = self.SubBytes(State=State)
-        # print("SubBytes")
-        # self.__print_state(State)
-
         State = self.ShiftRows(State=State)
-        # print("ShiftRows")
-        # self.__print_state(State)
-
         State = self.AddRoundKey(State=State, roundKey=w[4*Nr:4*Nr+4])
-        # print("AddRoundKey")
-        # self.__print_state(State)
-
         return State
 
     def InvCipher(self, State, Nr, Expanded_KEY):
@@ -329,25 +319,28 @@ class AES:
         padded_plaintext = plaintext + padding
 
         # Inicializar el estado para la operación de cifrado (modo CBC)
-        State = [list(padded_plaintext[i:i + 16]) for i in range(0, len(padded_plaintext), 16)]  # Dividir en bloques de 16 bytes
+        list_States = [list(padded_plaintext[i:i + 16]) for i in range(0, len(padded_plaintext), 16)]  # Dividir en bloques de 16 bytes
 
         # Cifrado en modo CBC
         Nr = 10  # Número de rondas (esto depende de la clave, ajustar si se usa 192 o 256 bits)
         Expanded_KEY = self.KeyExpansion(self.__key)  # Expansión de la clave
-        previous_block = list(iv)  # El primer bloque a cifrar usa el IV
+        previous_block = self._Create_State(list(iv))  # El primer bloque a cifrar usa el IV
 
         ciphertext = iv  # El archivo cifrado empieza con el IV
 
-        for block in State:
+        for flattened_state in list_States:
+            
+            State = self._Create_State(flattened_state)
             # XOR del bloque actual con el bloque anterior (o IV en la primera iteración)
-            for i in range(16):
-                block[i] ^= previous_block[i]
-
+            for i in range(4):
+                for j in range(4):
+                    State[i][j] ^= previous_block[i][j]
+            
             # Cifrar el bloque usando AES
-            encrypted_block = self.Cipher(block, Nr, Expanded_KEY)
+            encrypted_block = self.Cipher(State, Nr, Expanded_KEY)
 
             # Guardar el bloque cifrado
-            ciphertext += bytes(encrypted_block)
+            ciphertext += bytes(self._Extract_State(encrypted_block))
 
             # Actualizar el bloque anterior para la siguiente iteración
             previous_block = encrypted_block
@@ -384,25 +377,38 @@ class AES:
         Expanded_KEY = self.KeyExpansion(self.__key)  # Expansión de la clave
 
         # Dividir ciphertext en bloques de 16 bytes
-        State = [list(ciphertext[i:i + block_size]) for i in range(0, len(ciphertext), block_size)]
+        list_States = [list(ciphertext[i:i + block_size]) for i in range(0, len(ciphertext), block_size)]
 
         # Descifrado en modo CBC
-        previous_block = iv
+        previous_block = self._Create_State(iv)
         plaintext = bytearray()
 
-        for block in State:
+        for flattened_state in list_States:
+            State = self._Create_State(flattened_state)
             # Descifrar el bloque
-            decrypted_block = self.InvCipher(block, Nr, Expanded_KEY)
+            decrypted_state = self.InvCipher(State, Nr, Expanded_KEY)
 
             # XOR con el bloque anterior (o el IV en la primera iteración)
-            for i in range(16):
-                decrypted_block[i] ^= previous_block[i]
+            for i in range(4):
+                for j in range(4):
+                    decrypted_state[i][j] ^= previous_block[i][j]
 
             # Añadir al texto descifrado
-            plaintext.extend(decrypted_block)
+            flattened_decrypted_state = self._Extract_State(decrypted_state)
+            plaintext.extend(flattened_decrypted_state)
+
 
             # Actualizar el bloque anterior para la siguiente iteración
-            previous_block = block
+            previous_block = State
+
+
+
+
+        ###############
+        ### HERE
+        ##############
+
+
 
         # Eliminar el padding PKCS7
         padding_length = plaintext[-1]
