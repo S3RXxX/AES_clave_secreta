@@ -346,7 +346,7 @@ class AES:
             previous_block = encrypted_block
 
         # Escribir el archivo cifrado
-        encrypted_filename = fichero + '.enc'
+        encrypted_filename = fichero + "_" + hex(self.Polinomio_Irreducible) + "_" + self.__key.hex() + "_SergiG" + '.enc'
         with open(encrypted_filename, 'wb') as f:
             f.write(ciphertext)
 
@@ -401,15 +401,6 @@ class AES:
             # Actualizar el bloque anterior para la siguiente iteración
             previous_block = State
 
-
-
-
-        ###############
-        ### HERE
-        ##############
-
-
-
         # Eliminar el padding PKCS7
         padding_length = plaintext[-1]
         plaintext = plaintext[:-padding_length]
@@ -427,12 +418,10 @@ class AES:
 
 
 if __name__ == "__main__":
-    aes = AES()
 
     """TODO:
-        -encrypt_file (falta revisar)
-        -decrypt_file (falta revisar)
-        -debug each function (per Cipher --> arreglar AddRoundKey)
+
+        -debug each function (per encrypt_file)
         -debug tot des de Python
         - fer anar amb openssl:
                 descifrar: openssl aes-128-cbc -d -K key -iv IV -in infile -out outfile
@@ -442,10 +431,12 @@ if __name__ == "__main__":
 
 
     ### provar cifrar
-    """aes1 = AES(key=, Polinomio_Irreducible = 0x11B)
-    aes1.encrypt_file()
+    key = "184d0214afe945d315339b6d92b01c0f"
+    key = bytearray.fromhex(key)
+    aes1 = AES(key=key, Polinomio_Irreducible = 0x11B)
+    aes1.encrypt_file("./Valores_test/mandril.png")
 
-    aes1.decrypt_file()"""
+    # aes1.decrypt_file()
 
     ### provar descifrar
     """aes2 = AES(key=, Polinomio_Irreducible = 0x11B)"""

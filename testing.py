@@ -441,8 +441,21 @@ def testing_Extract_State(verbose=False):
                 print(lst[i], new_lst[i])
     return e
 
-def testing_encrypt_file():
-    pass
+
+def compare_files(file1, file2):
+    with open(file1, 'rb') as f1, open(file2, 'rb') as f2:
+        file1_contents = f1.read()
+        file2_contents = f2.read()
+
+    if file1_contents == file2_contents:
+        print("The files are identical.")
+    else:
+        print("The files are different.")
+
+
+def testing_encrypt_file(f1, f2):
+    compare_files(f1,f2)
+    
 
 def testing_decrypt_file():
     pass
@@ -519,6 +532,8 @@ if __name__ == "__main__":
     es += testing_Create_State()
 
     es += testing_Extract_State()
+
+    testing_encrypt_file("./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f.enc", "./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f_SergiG.enc")
 
     print(f"All previous tests performed with {es} errors")
 
