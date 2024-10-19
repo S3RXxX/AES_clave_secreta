@@ -399,7 +399,7 @@ class AES:
 
 
             # Actualizar el bloque anterior para la siguiente iteración
-            previous_block = State
+            previous_block = self._Create_State(flattened_state)
 
         # Eliminar el padding PKCS7
         padding_length = plaintext[-1]
@@ -436,7 +436,10 @@ if __name__ == "__main__":
     aes1 = AES(key=key, Polinomio_Irreducible = 0x11B)
     aes1.encrypt_file("./Valores_test/mandril.png")
 
-    # aes1.decrypt_file()
+    aes1.decrypt_file("./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f_SergiG.enc")
 
     ### provar descifrar
-    """aes2 = AES(key=, Polinomio_Irreducible = 0x11B)"""
+    key = "4887d4193e4bc8c8d850c1e12adcb3ab"
+    key = bytearray.fromhex(key)
+    aes2 = AES(key=key, Polinomio_Irreducible = 0x11b)
+    aes2.decrypt_file(fichero="./Valores_test/wells_the_time_machine.txt_0x11b_4887d4193e4bc8c8d850c1e12adcb3ab.enc")
