@@ -1,5 +1,5 @@
-from G_F import G_F
-from AES import AES
+from class_G_F import G_F
+from aes import AES
 
 # Examples brought from 
 # https://formaestudio.com/rijndaelinspector/archivos/Rijndael_Animation_v4_eng-html5.html
@@ -545,7 +545,7 @@ if __name__ == "__main__":
 
     es += testing_Extract_State()
 
-    testing_encrypt_file("./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f.enc", "./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f_SergiG.enc")
+    # testing_encrypt_file("./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f.enc", "./Valores_test/mandril.png_0x11b_184d0214afe945d315339b6d92b01c0f_SergiG.enc")
 
     print(f"All previous tests performed with {es} errors")
 

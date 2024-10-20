@@ -1,121 +1,6 @@
 import os
-
-# Sergi GR
-
-class G_F:
-    """
-    Genera un cuerpo finito usando como polinomio irreducible el dado
-    representado como un entero. Por defecto toma el polinomio del AES.
-    Los elementos del cuerpo los representaremos por enteros 0<= n <= 255.
-    """
-    def __init__(self, Polinomio_Irreducible = 0x11B, verbose=False):
-        '''
-        Entrada: un entero que representa el polinomio para construir el cuerpo
-        Tabla_EXP y Tabla_LOG dos tablas, la primera tal que en la posición
-        i-ésima tenga valor a=g**i y la segunda tal que en la posición a-ésima
-        tenga el valor i tal que a=g**i. (g generador del cuerpo finito
-        representado por el menor entero entre 0 y 255.)
-        '''
-        self.verbose = verbose
-        self.Polinomio_Irreducible = Polinomio_Irreducible
-        self.Tabla_EXP, self.Tabla_LOG = self.__crear_Tablas(g=2)
-
-    def __producto_lento(self, a, b):
-        """ Realiza el producto binario (multiplicación en el campo finito GF(2^8)) entre dos bytes (valores de 8 bits).
-    
-        Entrada:
-        - a: Un byte (entero de 8 bits).
-        - b: Otro byte (entero de 8 bits).
-
-        Salida:
-        - El resultado de la multiplicación de 'a' y 'b' en el campo finito GF(2^8), usando XOR en lugar de suma."""
-        res = 0
-        for _ in range(8):
-            if b & 1:
-                res = res ^ a
-
-            a = self.xTimes(a)
-
-            b = b >> 1
-
-        return res
-    def __crear_Tablas(self, g):
-        """Crea las tablas de exponenciales (t_exp) y logaritmos (t_log) para el campo finito GF(2^8) usando un generador 'g'.
-
-        Entrada:
-        - g: Posible generador para el campo finito.
-
-        Salida:
-        - t_exp: Tabla de exponenciales para el campo finito GF(2^8).
-        - t_log: Tabla de logaritmos para el campo finito GF(2^8).
-        
-        El método busca un generador válido y genera las tablas de logaritmos y exponenciales para realizar
-        operaciones en el campo finito de forma eficiente.
-        """
-        t_exp = [1] + [0 for _ in range(255)]
-        t_log = [0 for _ in range(256)]
-
-        t_exp[1] = g
-        t_log[g] = 1
-        # calcular las tablas
-        for i in range(2, 256):
-            gi = self.__producto_lento(t_exp[i-1], g)
-            t_exp[i] = gi
-            if t_log[gi]:
-                # comprovar que es un generador
-                if self.verbose:
-                    print(f"ciclo prematuro en {i} para el intento de generador g = {g} para el polinomio irreducible {self.Polinomio_Irreducible}")
-                return self.__crear_Tablas(g=g+1)  # si g no es un generador, provar un valor mas grande
-            
-            t_log[gi] = i
-        
-        if self.verbose:
-            print(f"GEnerador encontrado para el polinomio irreducible {self.Polinomio_Irreducible} es g={g}")
-            print("t_exp", t_exp)
-            print()
-            print("t_log", t_log)
-        
-        return t_exp, t_log
-
-
-    def xTimes(self, n):
-        
-        """Entrada: un elemento del cuerpo representado por un entero entre 0 y 255
-        Salida: un elemento del cuerpo representado por un entero entre 0 y 255
-        que es el producto en el cuerpo de 'n' y 0x02 (el polinomio X)."""
-        aux = n << 1 # desplazar 1 bit
-        if n >= 128:
-            aux = aux ^ self.Polinomio_Irreducible
-        return aux
-
-    def producto(self, a, b):
-        """Entrada: dos elementos del cuerpo representados por enteros entre 0 y 255
-        Salida: un elemento del cuerpo representado por un entero entre 0 y 255
-        que es el producto en el cuerpo de la entrada.
-        Atención: Se valorará la eficiencia. No es lo mismo calcularlo
-        usando la definición en términos de polinomios o calcular
-        usando las tablas Tabla_EXP y Tabla_LOG."""
-        if a == 0 or b == 0:
-            return 0
-        
-        i = self.Tabla_LOG[a]
-        j = self.Tabla_LOG[b]
-
-        return self.Tabla_EXP[(i+j)%255]
-
-    def inverso(self, n):
-        """Entrada: un elementos del cuerpo representado por un entero entre 0 y 255
-        Salida: 0 si la entrada es 0,
-        el inverso multiplicativo de n representado por un entero entre
-        1 y 255 si n <> 0.
-        Atención: Se valorará la eficiencia."""
-        if n==0:
-            return 0
-
-        i = self.Tabla_LOG[n]
-        return self.Tabla_EXP[255-i]
-
-# para comprovar: http://www.ee.unb.ca/cgi-bin/tervo/calc2.pl?num=1+0+7+6&den=1+6+3&f=m&p=2&d=1
+import time
+import class_G_F
 
 class AES:
     '''
@@ -137,7 +22,7 @@ class AES:
         InvMixMatrix : equivalente a la matriz usada en 5.3.3, pág. 24
         '''
         self.Polinomio_Irreducible = Polinomio_Irreducible
-        self.GF = G_F(self.Polinomio_Irreducible)
+        self.GF = class_G_F.G_F(self.Polinomio_Irreducible)
         self.SBox, self.InvSBox = self.__Cal_SBox_InvSBox()
         
         self.Rcon = self.__Cal_Rcon()
@@ -179,7 +64,7 @@ class AES:
                 aux = aux << i
                 sb |= aux
 
-            # Añadir a la tabla
+            # Añadir la constante de la transformación afín (0x63)
             SBox[b] = sb
 
             # 3. Calcular InvSBox (la inversa de SBox)
@@ -198,7 +83,7 @@ class AES:
         """
         Rcon = [[0, 0, 0, 0] for _ in range(10)]
 
-        # El primer valor de Rcon es [0x01, 0x00, 0x00, 0x00]
+        # El primer valor de Rcon[1] es [0x01, 0x00, 0x00, 0x00]
         Rcon[0][0] = 0x01
 
         for i in range(9):
@@ -207,15 +92,6 @@ class AES:
         return Rcon
     
     def _Create_State(self, lst):
-        """
-        Crea una matriz de estado de 4x4 a partir de una lista de 16 elementos.
-
-        Entrada:
-        - lst: Una lista de 16 elementos (bytes) que representan los datos a organizar en la matriz de estado.
-
-        Salida:
-        - State: Una matriz de 4 filas y 4 columnas donde los elementos de la lista están organizados en columnas.
-        """
         r1, r2, r3, r4 = [], [], [], []
         State = [r1, r2, r3, r4]
         for i in range(16):  # el estado siempre es 4x4
@@ -223,19 +99,6 @@ class AES:
         return State
     
     def _Extract_State(self, State):
-        """
-        Extrae los elementos de una matriz de estado de 4x4 y los organiza en una lista de 16 elementos.
-        
-        Entrada:
-        - State: Una matriz de 4 filas y 4 columnas.
-
-        Salida:
-        - lst: Una lista de 16 elementos que contiene los valores extraídos de la matriz de estado, organizados
-        en orden por columnas.
-        
-        Esta función es el inverso de _Create_State. Convierte una matriz de estado de 4x4 nuevamente en una
-        lista plana de 16 elementos, siguiendo la estructura por columnas que se usa en AES.
-        """
         lst = [None for _ in range(16)]
         for i in range(4):
             for j in range(4):
@@ -437,7 +300,7 @@ class AES:
         iv = os.urandom(16)
 
         # Aplicar padding PKCS7
-        block_size = 16  # Tamaño del bloque
+        block_size = 16  # Tamaño del bloque en AES (128 bits = 16 bytes)
         padding_length = block_size - (len(plaintext) % block_size)
         padding = bytes([padding_length] * padding_length)  # Rellenar con el valor del padding
         padded_plaintext = plaintext + padding
@@ -499,7 +362,7 @@ class AES:
         ciphertext = ciphertext[16:]  # El resto es el ciphertext
 
         # Inicializar el estado para la operación de descifrado (modo CBC)
-        block_size = 16
+        block_size = 16  # Tamaño del bloque en AES (128 bits = 16 bytes)
         
         key_length = len(self.__key)  # longitud en bytes
         Nk, Nr = self.__check_Nk_Nr(key_length)
@@ -543,24 +406,10 @@ class AES:
         print(f"Archivo descifrado guardado como: {decrypted_filename}")
 
     def __print_state(self, state):
-        """Función auxiliar para imprimir el estado en hex"""
         for row in state:
             print(list(map(hex,row)))
 
     def __check_Nk_Nr(self, key_length):
-        """
-        Verifica la longitud de la clave y asigna los valores adecuados de Nk y Nr según la especificación de AES.
-
-        Entrada:
-        - key_length: Longitud de la clave en bytes (16, 24 o 32), que corresponden a claves de 128, 192 y 256 bits, respectivamente.
-
-        Salida:
-        - Nk: Número de palabras en la clave (en AES, cada palabra tiene 32 bits). Nk toma valores de 4, 6 u 8, 
-            dependiendo de la longitud de la clave.
-        - Nr: Número de rondas de cifrado, que depende del tamaño de la clave. Nr puede ser 10, 12 o 14.
-        
-        Si la longitud de la clave no es válida, levanta una excepción.
-        """
         
         if key_length == 16:  # 128 bits
             Nk = 4
@@ -576,3 +425,37 @@ class AES:
                              Longitud recibida {key_length}""")
         return Nk, Nr
 
+
+if __name__ == "__main__":
+
+    """TODO:
+
+        -debug each function (per encrypt_file)
+        -debug tot des de Python
+        - fer anar amb openssl:
+                descifrar: openssl aes-128-cbc -d -K key -iv IV -in infile -out outfile
+                cifrar   : openssl aes-128-cbc -e -K key -iv IV -in infile -out outfile 
+    """
+    
+
+
+    ### provar cifrar
+    key = "184d0214afe945d315339b6d92b01c0f"
+    key = bytearray.fromhex(key)
+    aes1 = AES(key=key, Polinomio_Irreducible = 0x11B)
+    
+    start_encrypt = time.time()
+    aes1.encrypt_file("./Valores_test/wells_the_time_machine.txt")
+    end_encrypt = time.time()
+    print(f"Tiempo de cifrado: {end_encrypt - start_encrypt:.4f} segundos")
+
+    start_decrypt = time.time()
+    aes1.decrypt_file("./Valores_test/wells_the_time_machine.txt_0x11b_184d0214afe945d315339b6d92b01c0f_SergiG.enc")
+    end_decrypt = time.time()
+    print(f"Tiempo de descifrado: {end_decrypt - start_decrypt:.4f} segundos")
+
+    ### provar descifrar
+    # key = "4887d4193e4bc8c8d850c1e12adcb3ab"
+    # key = bytearray.fromhex(key)
+    # aes2 = AES(key=key, Polinomio_Irreducible = 0x11b)
+    # aes2.decrypt_file(fichero="./Valores_test/wells_the_time_machine.txt_0x11b_4887d4193e4bc8c8d850c1e12adcb3ab.enc")
