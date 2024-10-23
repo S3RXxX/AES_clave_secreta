@@ -1,6 +1,7 @@
 import time
 import random
-import aes
+import aes_Sergi_Guimera as aes
+# import aes_huilin as aes
 
 Polinonios_Irreducibles=[0x11b, 0x1f9]
 NKs = [16, 24, 32]

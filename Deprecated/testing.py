@@ -1,5 +1,5 @@
 from class_G_F import G_F
-from aes import AES
+from class_AES import AES
 
 # Examples brought from 
 # https://formaestudio.com/rijndaelinspector/archivos/Rijndael_Animation_v4_eng-html5.html
